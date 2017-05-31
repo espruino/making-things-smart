@@ -1,0 +1,37 @@
+<html>
+  <head>
+    <title>Making Things Smart Experiment 38</title>
+  </head>
+  <body>
+    <canvas id="canv" style="border:1px solid black"></canvas>
+    <script>
+    var canvas = document.getElementById("canv");
+    canvas.width = 500;
+    canvas.height = 500;
+    var ctx = canvas.getContext('2d');
+    var midx = canvas.width/2, midy = canvas.height/2;
+    var lastPos = [midx,midy];
+
+    function moveTo(x,y,callback) {
+      var pos = [x/4+midx, y/4+midy];
+      ctx.beginPath();
+      ctx.moveTo(lastPos[0], lastPos[1]);
+      ctx.lineTo(pos[0], pos[1]);
+      lastPos = pos;
+      ctx.stroke();
+      ctx.closePath();
+      if (callback) setTimeout(callback,1);
+    }
+    // -----------------------------
+
+    function spiral(r,ang) {
+      if (ang>=Math.PI*24) return;
+      moveTo(Math.sin(ang)*r, Math.cos(ang)*r, function() {
+        spiral(r+0.2, ang+Math.PI/40);
+      });
+    }
+
+    spiral(0,0);
+    </script>
+  </body>
+</html>

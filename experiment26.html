@@ -1,0 +1,150 @@
+<html>
+  <head>
+    <title>Making Things Smart Experiment 26</title>
+  </head>
+  <body>
+    <pre id="log"></pre>
+    <script>
+    var logElement = document.getElementById("log");
+    console.log = function(s) {
+      logElement.innerHTML += s+"\n";
+    }
+
+    // The threshold for detecting a change to a 1 or a 0 in the signal
+    var THRESH = 0.01;
+
+    // Do we think the input is a 1 or a 0?
+    var currentState = 0;
+    // How many samples have we been in this state (in samples)?
+    var timeInState = 0;
+
+    // The data we've received so far
+    var currentCode;
+
+    // The data we've received so far, or 'undefined' if we are not
+    // receiving any data at the moment
+    var currentCode;
+
+    function gotData(data) {
+      // Print the raw data
+      console.log(data);
+      // Reconstruct a String from this
+      var str = "";
+      for (var i=0;i<data.length;i+=8) {
+        str += String.fromCharCode(parseInt(data.substr(i,8),2));
+      }
+      console.log("   " + JSON.stringify(str));
+    }
+    /* // or transmit via dweet
+    function gotData(data) {
+      // Return if data is not a multiple of 8 bits long
+      if (data.length & 7) return;
+      // Print the raw data
+      console.log(data);
+      // Reconstruct a String from this
+      var str = "";
+      for (var i=0;i<data.length;i+=8) {
+        str += String.fromCharCode(parseInt(data.substr(i,8),2));
+      }
+      console.log("   " + JSON.stringify(str));
+      // Now send a message to Dweet.io
+      var oReq = new XMLHttpRequest();
+      oReq.addEventListener("load", function() {
+        console.log("Got response: "+this.responseText)
+      });
+      oReq.open("POST","https://dweet.io/dweet/for/espruino_tmp?temp="+str);
+      oReq.send();
+    }    
+    */
+
+    // Called when the input changes state
+    function changedState(newState, timePassed) {
+      if (newState!=0) return;
+      var ms = timePassed * 1000; // time in milliseconds
+      // Check the pulse length
+      if (ms > 4.5 && ms < 5.5) {
+        // It's a 5ms 'start' pulse
+        currentCode = "";
+      } else if (ms > 2.5 && ms < 3.5) {
+        // It's a 3ms 'end' pulse
+        if (currentCode!==undefined && currentCode.length)
+          gotData(currentCode);
+        currentCode = undefined;
+      } else if (ms<2) {
+        // It's hopefully a data pulse
+        if (currentCode!==undefined)
+          currentCode += (ms>1) ? "1" : "0";
+      } else {
+        // unknown pulse size - give up on receiving
+        currentCode = undefined;
+      }
+    }
+    /*function changedState(newState, timePassed) {
+      console.log((newState?"Lo":"Hi") + " for " + (timePassed*1000).toFixed(2));
+    }*/
+
+    function processAudio(e) {
+      var data = e.inputBuffer.getChannelData(0);
+      // Now search for changes in value
+      for (var i=0;i<data.length;i++) {
+        // Did it suddely go high? it's a 1
+        if (currentState==0 && data[i]>THRESH) {
+          currentState=1;
+          changedState(1, timeInState / e.inputBuffer.sampleRate);
+          timeInState = 0;
+        }
+        // Did it suddely go low? it's a 0
+        if (currentState==1 && data[i]<-THRESH) {
+          currentState=0;
+          changedState(0, timeInState / e.inputBuffer.sampleRate)
+          timeInState = 0;
+        }
+        timeInState++;
+      }
+    }
+
+    function startRecord() {
+      window.AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!window.AudioContext) {
+        console.log("No window.AudioContext");
+        return; // no audio available
+      }
+      navigator.getUserMedia = navigator.getUserMedia ||
+                               navigator.webkitGetUserMedia ||
+                               navigator.mozGetUserMedia;
+      if (!navigator.getUserMedia) {
+        console.log("No navigator.getUserMedia");
+        return; // no audio available
+      }
+
+      var context = new AudioContext();
+      var userMediaStream;
+      var inputNode = context.createScriptProcessor(4096, 1/*in*/, 1/*out*/);
+      window.dontGarbageCollectMePlease = inputNode;
+      inputNode.onaudioprocess = processAudio;
+
+      navigator.getUserMedia({
+          video:false,
+          audio:{
+            mandatory:[],
+            optional:[{ echoCancellation:false },
+              { googEchoCancellation: false },
+              { googAutoGainControl: false },
+              { googNoiseSuppression: false },
+              { googHighpassFilter: false }
+            ,{ sampleRate:22050 /* 44100 */ }]
+          }
+        }, function(stream) {
+          var inputStream = context.createMediaStreamSource(stream);
+          inputStream.connect(inputNode);
+          inputNode.connect(context.destination);
+          console.log("Record start successful");
+        }, function(e) {
+          console.log('getUserMedia error', e);
+      });
+    }
+
+    startRecord();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,92 @@
+<html>
+  <head>
+    <title>Making Things Smart Experiment 39</title>
+  </head>
+  <body>
+    Load image <input type="file" id="imageLoader" name="imageLoader"/><br/>
+    <canvas id="canv" style="border:1px solid black"></canvas>
+    <script>
+    // display the canvas
+    var canvas = document.getElementById("canv");
+    var imageWidth = 200;
+    var imageHeight = 100;
+    canvas.width = 500;
+    canvas.height = 500;
+    var ctx = canvas.getContext('2d');
+    var midx = canvas.width/2, midy = canvas.height/2;
+    var lastPos;
+
+    function moveTo(x,y,callback) {
+      var pos = [x/4+midx, y/4+midy];
+      if (lastPos)
+        ctx.lineTo(pos[0], pos[1]);
+      else
+        ctx.moveTo(pos[0], pos[1]);
+      lastPos = pos;
+      setTimeout(callback,0);
+    }
+
+    function startDraw() {
+      lastPos = undefined;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.beginPath();
+    }
+
+    function endDraw() {
+      ctx.stroke();
+      ctx.closePath();
+    }
+
+    // Handle loading of the image
+    var imgData; // the raw RGBA image data
+    var imageLoader = document.getElementById('imageLoader');
+    imageLoader.addEventListener('change', function (e) {
+      // This is called when you've chosen a file
+      // First we read the file
+      var reader = new FileReader();
+      reader.onload = function(event) {
+        // Then we load it into an image
+        var img = new Image();
+        img.onload = function() {
+          // we draw that image on to our canvas
+          ctx.drawImage(img, 0, 0, imageWidth, imageHeight);
+          // read back the image data into an array
+          imgData = ctx.getImageData(0, 0, imageWidth, imageHeight).data;
+          // and finally we start converting it to a line drawing
+          startDraw();
+          scanImage();
+         }
+        img.src = event.target.result;
+      }
+      reader.readAsDataURL(e.target.files[0]);
+    }, false);
+
+    // Output the image as lines
+    function scanImage() {
+      var step = 0;
+      for (var y=0;y<imageHeight;y++) {
+        for (var x=0;x<imageWidth;x++) {
+          // get color from image - work out where (we want to zig-zag)
+          var imagex = (y&1) ? x : imageWidth-x;
+          var imagey = y;
+          // the image is in RGBA format, so we take the average of
+          // red, green and blue channels
+          var col = (
+            imgData[(imagey*imageWidth + imagex)*4] +
+            imgData[(imagey*imageWidth + imagex)*4 + 1] +
+            imgData[(imagey*imageWidth + imagex)*4 + 2]) / 3;
+          // now work out where on the page to draw the line
+          // and work out what
+          var px = (imagex - imageWidth/2)*7.5;
+          var py = (imagey - imageHeight/2)*15 +
+                Math.sin(step)*(col-255)/15;
+          step++;
+          // and move to the location
+          moveTo(px, py);
+        }
+      }
+      endDraw();
+    }
+    </script>
+  </body>
+</html>

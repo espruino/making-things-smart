@@ -1,0 +1,14 @@
+<html>
+ <head><title>Door Openings</title></head>
+ <body>
+  <p style="text-align:center">
+    Door opened<br/>
+    <span id="result" style="font-size:200px">?</span><br/>
+    times...
+  </p>
+  <script>
+   if (window.location.hash)
+     document.getElementById("result").innerHTML = window.location.hash.substr(1);
+  </script>
+ </body>
+</html>

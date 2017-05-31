@@ -1,0 +1,19 @@
+<html>
+ <head><title>Door Opening reader</title></head>
+ <body>
+  <script src="https://www.puck-js.com/puck.js"></script>
+  <p style="text-align:center">
+    Door opened<br/>
+    <span id="result" style="font-size:200px;cursor:pointer">?</span><br/>
+    times...
+  </p>
+  <script>
+   function onClick() {
+     Puck.eval("doorOpenings", function(result) {
+       document.getElementById("result").innerHTML = result;
+     });
+   }
+   document.getElementById("result").addEventListener("click", onClick);
+  </script>
+ </body>
+</html>

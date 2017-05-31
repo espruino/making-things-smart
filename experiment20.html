@@ -1,0 +1,120 @@
+<html>
+  <head>
+    <title>Making Things Smart Experiment 20</title>
+  </head>
+  <body>
+    <div id="box" style="width:100px;height:100px"></div>
+    <pre id="log"></pre>
+    <script>
+    var logElement = document.getElementById("log");
+    console.log = function(s) {
+      logElement.innerHTML += s+"\n";
+    }
+
+    // The threshold for detecting a change to a 1 or a 0 in the signal
+    var THRESH = 0.01;
+
+    // Do we think the input is a 1 or a 0?
+    var currentState = 0;
+    // How many samples have we been in this state (in samples)?
+    var timeInState = 0;
+
+    var currentCode = "";
+
+    function gotCode(code) {
+      if (code=="1111100000111000000010000011011111")
+        document.getElementById("box").style.background="red";
+      if (code=="1111100000111000001010000001011111")
+        document.getElementById("box").style.background="green";
+      if (code=="1111100000111000000110000010011111")
+        document.getElementById("box").style.background="yellow";
+      if (code=="1111100000111000000001000011101111")
+        document.getElementById("box").style.background="blue";
+      console.log("Got code "+code);
+    }
+
+    // Called when the input changes state
+    function changedState(newState, timePassed) {
+      if (timePassed > 0.02) {
+        // let's assume there was a gap. Handle the last code, and reset it
+        if (currentCode!="") gotCode(currentCode);
+        currentCode = "";
+      }
+      // Add a bit only when the signal was high (it's now 0)
+      // Since in the last code, 'Hi' was the signal
+      //   that changed while 'Lo' was constant
+      if (newState == 0) {
+        if (timePassed > 0.001) currentCode += "1";
+        else currentCode += "0";
+      }
+    }
+
+    function processAudio(e) {
+      var data = e.inputBuffer.getChannelData(0);
+      // Now search for changes in value
+      for (var i=0;i<data.length;i++) {
+        // Did it suddely go high? it's a 1
+        if (currentState==0 && data[i]>THRESH) {
+          currentState=1;
+          changedState(1, timeInState / e.inputBuffer.sampleRate);
+          timeInState = 0;
+        }
+        // Did it suddely go low? it's a 0
+        if (currentState==1 && data[i]<-THRESH) {
+          currentState=0;
+          changedState(0, timeInState / e.inputBuffer.sampleRate)
+          timeInState = 0;
+        }
+        timeInState++;
+      }
+      if (timeInState > 2000) {
+        if (currentCode!="") gotCode(currentCode);
+        currentCode = "";
+      }      
+    }
+
+    function startRecord() {
+      window.AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!window.AudioContext) {
+        console.log("No window.AudioContext");
+        return; // no audio available
+      }
+      navigator.getUserMedia = navigator.getUserMedia ||
+                               navigator.webkitGetUserMedia ||
+                               navigator.mozGetUserMedia;
+      if (!navigator.getUserMedia) {
+        console.log("No navigator.getUserMedia");
+        return; // no audio available
+      }
+
+      var context = new AudioContext();
+      var userMediaStream;
+      var inputNode = context.createScriptProcessor(4096, 1/*in*/, 1/*out*/);
+      window.dontGarbageCollectMePlease = inputNode;
+      inputNode.onaudioprocess = processAudio;
+
+      navigator.getUserMedia({
+          video:false,
+          audio:{
+            mandatory:[],
+            optional:[{ echoCancellation:false },
+              { googEchoCancellation: false },
+              { googAutoGainControl: false },
+              { googNoiseSuppression: false },
+              { googHighpassFilter: false }
+            ,{ sampleRate:22050 /* 44100 */ }]
+          }
+        }, function(stream) {
+          var inputStream = context.createMediaStreamSource(stream);
+          inputStream.connect(inputNode);
+          inputNode.connect(context.destination);
+          console.log("Record start successful");
+        }, function(e) {
+          console.log('getUserMedia error', e);
+      });
+    }
+
+    startRecord();
+    </script>
+  </body>
+</html>

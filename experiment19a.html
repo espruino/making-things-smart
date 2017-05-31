@@ -1,0 +1,90 @@
+<html>
+  <head>
+    <title>Making Things Smart Experiment 19</title>
+  </head>
+  <body>
+    <pre id="log"></pre>
+    <script>
+    var logElement = document.getElementById("log");
+    console.log = function(s) {
+      logElement.innerHTML += s+"\n";
+    }
+
+    // The threshold for detecting a change to a 1 or a 0 in the signal
+    var THRESH = 0.01;
+
+    // Do we think the input is a 1 or a 0?
+    var currentState = 0;
+    // How many samples have we been in this state (in samples)?
+    var timeInState = 0;
+
+    // Called when the input changes state
+    function changedState(newState, timePassed) {
+      console.log((newState?"Lo":"Hi") + " for " + (timePassed*1000).toFixed(2));
+    }
+
+    function processAudio(e) {
+      var data = e.inputBuffer.getChannelData(0);
+      // Now search for changes in value
+      for (var i=0;i<data.length;i++) {
+        // Did it suddely go high? it's a 1
+        if (currentState==0 && data[i]>THRESH) {
+          currentState=1;
+          changedState(1, timeInState / e.inputBuffer.sampleRate);
+          timeInState = 0;
+        }
+        // Did it suddely go low? it's a 0
+        if (currentState==1 && data[i]<-THRESH) {
+          currentState=0;
+          changedState(0, timeInState / e.inputBuffer.sampleRate)
+          timeInState = 0;
+        }
+        timeInState++;
+      }
+    }
+
+    function startRecord() {
+      window.AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!window.AudioContext) {
+        console.log("No window.AudioContext");
+        return; // no audio available
+      }
+      navigator.getUserMedia = navigator.getUserMedia ||
+                               navigator.webkitGetUserMedia ||
+                               navigator.mozGetUserMedia;
+      if (!navigator.getUserMedia) {
+        console.log("No navigator.getUserMedia");
+        return; // no audio available
+      }
+
+      var context = new AudioContext();
+      var userMediaStream;
+      var inputNode = context.createScriptProcessor(4096, 1/*in*/, 1/*out*/);
+      window.dontGarbageCollectMePlease = inputNode;
+      inputNode.onaudioprocess = processAudio;
+
+      navigator.getUserMedia({
+          video:false,
+          audio:{
+            mandatory:[],
+            optional:[{ echoCancellation:false },
+              { googEchoCancellation: false },
+              { googAutoGainControl: false },
+              { googNoiseSuppression: false },
+              { googHighpassFilter: false }
+            ,{ sampleRate:22050 /* 44100 */ }]
+          }
+        }, function(stream) {
+          var inputStream = context.createMediaStreamSource(stream);
+          inputStream.connect(inputNode);
+          inputNode.connect(context.destination);
+          console.log("Record start successful");
+        }, function(e) {
+          console.log('getUserMedia error', e);
+      });
+    }
+
+    startRecord();
+    </script>
+  </body>
+</html>
