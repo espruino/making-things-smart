@@ -11,7 +11,7 @@ function start(rpm) {
   // just in case!
   stop();
   // start our interval
-  setInterval(function() {
+  interval = setInterval(function() {
     // output the step from the array
     digitalWrite(MTR, steps[step]);
     // move on to the next step
