@@ -1,6 +1,6 @@
 # Making Things Smart
 
-Extra information for the 'Making Things Smart' book by Gordon Williams
+Extra information for the ['Making Things Smart' book by Gordon Williams](http://shop.oreilly.com/product/0636920031246.do) (available from [O-Reilly](http://shop.oreilly.com/product/0636920031246.do) and [Amazon](https://www.amazon.co.uk/Making-Things-Smart-Programming-Transforming/dp/1680451898))
 
 This code is designed for [Espruino JavaScript Microcontroller boards](http://www.espruino.com/Order)
 
