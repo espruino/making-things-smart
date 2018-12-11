@@ -125,6 +125,13 @@ Using [Puck.js](http://www.puck-js.com/) to count the number of times a door has
 * [Experiment 36 Espruino JavaScript](experiment36.js)
 * [Experiment 36 HTML](experiment36.html)
 
+**Note:** Google has shut down some features that were used for Experiment 35:
+
+* [Eddystone notifications are now disabled](https://android-developers.googleblog.com/2018/10/discontinuing-support-for-android.html)
+because of abuse by advertisers, so Eddystone devices will no longer appear as Android Notifications.
+* The [goo.gl URL shortener is shutting down](https://developers.googleblog.com/2018/03/transitioning-google-url-shortener.html)
+so you'll need to use something like [bit.ly](https://bitly.com/) instead.
+
 ### Chapter 17 - XY Plotter
 
 Building a pen plotter with stepper motors so get much more accurate positioning.

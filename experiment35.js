@@ -1,3 +1,8 @@
+// Note: Google has now disabled Eddystone notifications because of abuse
+// by advertisers, so Eddystone devices will no longer appear as Android Notifications .
+// See https://android-developers.googleblog.com/2018/10/discontinuing-support-for-android.html
+// Google also shut down goo.gl, so you'll need to use bit.ly for new links instead
+
 // magnetism measured when nothing around
 var zeroMag = Puck.mag();
 var wasDoorOpen = false;
